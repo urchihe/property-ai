@@ -110,7 +110,7 @@
                     :disabled="loading"
                     class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold px-6 py-3 md:py-4 rounded-lg shadow transition-transform transform hover:scale-105"
                 >
-                    <span x-show="!loading">Generate Description</span>
+                    <span x-show="!loading">Generate AI Description</span>
                     <span x-show="loading">Generating...</span>
                 </button>
             </div>

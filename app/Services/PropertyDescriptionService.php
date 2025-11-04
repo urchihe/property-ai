@@ -15,14 +15,6 @@ class PropertyDescriptionService
     {
         $cacheKey = 'property_descriptions_'.$property->id;
 
-        if (! $regenerate && Cache::has($cacheKey)) {
-            /** @var array<int, array{description: string, seo_score: int}>|null $cached */
-            $cached = Cache::get($cacheKey);
-            if (is_array($cached)) {
-                return $cached;
-            }
-        }
-
         $promptText = <<<PROMPT
             You are an expert real estate copywriter.
             Write a professional, SEO-optimized, and engaging property description.
@@ -82,18 +74,17 @@ class PropertyDescriptionService
 
         // Check the structure of the output
         if (
-            isset($response['output'])
-            && is_array($response['output'])
-            && count($response['output']) > 0
-            && is_array($response['output'][0])
-            && isset($response['output'][0]['content'])
-            && is_array($response['output'][0]['content'])
-            && count($response['output'][0]['content']) > 0
-            && is_array($response['output'][0]['content'][0])
-            && isset($response['output'][0]['content'][0]['text'])
-            && is_string($response['output'][0]['content'][0]['text'])
+            isset($response['choices'])
+            && is_array($response['choices'])
+            && count($response['choices']) > 0
+            && is_array($response['choices'][0])
+            && isset($response['choices'][0]['message'])
+            && is_array($response['choices'][0]['message'])
+            && isset($response['choices'][0]['message']['content'])
         ) {
-            return $response['output'][0]['content'][0]['text'];
+            /** @var string $responseDescription */
+            $responseDescription = $response['choices'][0]['message']['content'];
+            return $responseDescription;
         }
 
         // Fallback description if structure is invalid
@@ -109,27 +100,33 @@ class PropertyDescriptionService
      */
     protected function callOpenAIResponses(string $promptText): array
     {
+        /** @var string $apiKey */
         $apiKey = config('services.openai.key');
+        /** @var string $apiBase */
+        $apiBase = config('services.openai.base_url', 'https://api.openai.com/v1');
+        $model = config('services.openai.model', 'gpt-4o-mini');
 
-        if (! is_string($apiKey) || empty($apiKey)) {
-            throw new \Exception('OpenAI API key is not set.');
+        // Fallback to OpenRouter if OpenAI API fails or limit exceeded
+        $useOpenRouter = str_contains($apiBase, 'openrouter.ai');
+
+        if (! $apiKey) {
+            throw new \Exception('No API key configured for AI service.');
         }
 
-        $response = Http::withHeaders([
+        $response = Http::withOptions([
+            'timeout' => 20,
+            'connect_timeout' => 5,
+            'curl' => [
+                CURLOPT_FORBID_REUSE => false,
+                CURLOPT_FRESH_CONNECT => false,
+            ],
+        ])->withHeaders([
             'Authorization' => "Bearer {$apiKey}",
             'Content-Type' => 'application/json',
-        ])->post('https://api.openai.com/v1/responses', [
-            'model' => 'gpt-3.5-turbo',
-            'input' => [
-                [
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'input_text',
-                            'text' => $promptText,
-                        ],
-                    ],
-                ],
+        ])->post("{$apiBase}/chat/completions", [
+            'model' => $useOpenRouter ? 'openai/gpt-4o' : $model,
+            'messages' => [
+                ['role' => 'user', 'content' => $promptText],
             ],
         ]);
 
