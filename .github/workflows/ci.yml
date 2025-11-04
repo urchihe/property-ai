@@ -17,7 +17,7 @@ jobs:
       APP_KEY: ''
       APP_ENV: testing
       DB_CONNECTION: mysql
-      DB_HOST: database
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: property_generator
       DB_USERNAME: root
