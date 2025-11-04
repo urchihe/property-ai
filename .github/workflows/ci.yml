@@ -9,6 +9,12 @@ on:
 jobs:
   laravel-ci:
     runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:20.10.24
+        options: --privileged
+        ports:
+          - 8000:8000
 
     env:
       COMPOSE_PROJECT_NAME: property-generator
@@ -31,11 +37,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Create .env file
-        run: |
-          cp .env.example .env
-          php -r "file_exists('.env') || copy('.env.example', '.env');"
-
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -48,18 +49,28 @@ jobs:
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
+      # 🕐 Wait for containers to be ready
+      - name: Wait for app service to be ready
+        run: |
+          echo "Waiting for app container to be ready..."
+          until docker-compose exec -T app php -v >/dev/null 2>&1; do
+            echo "App not ready yet..."
+            sleep 5
+          done
+          echo "App container is ready."
+
+      # 🗝 Generate key safely after app is ready
       - name: Generate Laravel App Key
         run: docker-compose exec -T app php artisan key:generate
 
       - name: Run PHP Formatting
         run: docker-compose exec -T app composer pint
 
-      - name: Run PHPStan (Static Analysis)
+      - name: Run PHPStan
         run: docker-compose exec -T app composer lint
 
       - name: Run PHPUnit / PEST tests
-        run: docker-compose exec -T app php artisan test --env=testing
+        run: docker-compose exec -T app php artisan test
 
       - name: Shutdown Docker Compose
-        if: always()
-        run: docker-compose down -v
+        run: docker-compose down
