@@ -28,6 +28,9 @@ class PropertyDescription extends Component
 
     public ?Property $property = null;
 
+    /**
+     * @var array<string, mixed>
+     */
     protected $rules = [
         'title' => 'required|string|max:255',
         'property_type' => 'required|in:House,Flat,Land,Commercial',
@@ -98,7 +101,7 @@ class PropertyDescription extends Component
     /**
      * Validate each field as it's updated
      */
-    public function updated($propertyName): void
+    public function updated(string $propertyName): void
     {
         $this->validateOnly($propertyName);
     }
