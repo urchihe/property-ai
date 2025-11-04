@@ -9,12 +9,6 @@ on:
 jobs:
   laravel-ci:
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:20.10.24
-        options: --privileged
-        ports:
-          - 8000:8000
 
     env:
       COMPOSE_PROJECT_NAME: property-generator
@@ -43,23 +37,28 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
 
-      - name: Set up Docker
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
-      # 🕐 Wait for containers to be ready
       - name: Wait for app service to be ready
         run: |
           echo "Waiting for app container to be ready..."
-          until docker-compose exec -T app php -v >/dev/null 2>&1; do
-            echo "App not ready yet..."
+          for i in {1..18}; do
+            if docker-compose exec -T app php -v >/dev/null 2>&1; then
+              echo "App container is ready."
+              exit 0
+            fi
+            echo "App not ready yet... ($i/18)"
             sleep 5
           done
-          echo "App container is ready."
+          echo "App container failed to start after 90s"
+          docker-compose ps
+          docker-compose logs app
+          exit 1
 
-      # 🗝 Generate key safely after app is ready
       - name: Generate Laravel App Key
         run: docker-compose exec -T app php artisan key:generate
 
