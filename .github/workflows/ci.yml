@@ -43,6 +43,7 @@ jobs:
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
+      # 🕐 Wait for Laravel container to be ready
       - name: Wait for app service to be ready
         run: |
           echo "Waiting for app container to be ready..."
@@ -59,6 +60,13 @@ jobs:
           docker-compose logs app
           exit 1
 
+      # Prepare Laravel environment and app key
+      - name: Prepare Laravel environment
+        run: |
+          docker-compose exec -T app cp .env.example .env || echo "No .env.example found, skipping copy"
+          echo "APP_KEY=${APP_KEY}" | docker-compose exec -T app tee -a .env >/dev/null
+          docker-compose exec -T app php artisan key:generate --force
+
       - name: Run PHP Formatting
         run: docker-compose exec -T app composer pint
 
@@ -66,7 +74,7 @@ jobs:
         run: docker-compose exec -T app composer lint
 
       - name: Run PHPUnit / PEST tests
-        run: docker-compose exec -T app php artisan test
+        run: docker-compose exec -T app php artisan test --env=testing
 
       - name: Shutdown Docker Compose
         run: docker-compose down
