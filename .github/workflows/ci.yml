@@ -43,7 +43,7 @@ jobs:
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
-      # 🕐 Wait for Laravel container to be ready
+      # Wait for Laravel container to be ready
       - name: Wait for app service to be ready
         run: |
           echo "Waiting for app container to be ready..."
@@ -74,7 +74,7 @@ jobs:
         run: docker-compose exec -T app composer lint
 
       - name: Run PHPUnit / PEST tests
-        run: docker-compose exec -T app php artisan test --env=testing
+        run: docker-compose exec -T app php artisan test
 
       - name: Shutdown Docker Compose
         run: docker-compose down
