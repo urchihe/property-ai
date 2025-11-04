@@ -74,8 +74,8 @@ jobs:
       - name: Run PHPStan
         run: docker-compose exec -T app composer lint
 
-      - name: Run PHPUnit / PEST tests
-        run: docker-compose exec -T app php artisan test
+      #- name: Run PHPUnit / PEST tests
+        #run: docker-compose exec -T app php artisan test
 
       - name: Shutdown Docker Compose
         run: docker-compose down

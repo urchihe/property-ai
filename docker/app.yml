@@ -6,7 +6,6 @@ services:
     volumes:
       - ../:/var/www/html
       - /var/www/html/vendor
-      - ../.env.example:/var/www/html/.env
     depends_on:
       - mysql
     ports:
