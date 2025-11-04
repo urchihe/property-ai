@@ -38,20 +38,11 @@ jobs:
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
-      - name: Install PHP dependencies
-        run: docker-compose exec app composer install --prefer-dist --no-progress --no-interaction
-
-      - name: Install Node dependencies
-        run: docker-compose exec app npm install
-
-      - name: Run PHPStan
-        run: docker-compose exec app vendor/bin/phpstan analyse
-
-      - name: Run Pint formatting
+      - name: Run PHP Formatting
         run: docker-compose exec app composer pint
 
-      - name: Run Tailwind lint
-        run: docker-compose exec app composer tlint
+      - name: Run PHPStan
+        run: docker-compose exec app composer lint
 
       - name: Run PHPUnit / PEST tests
         run: docker-compose exec app php artisan test
