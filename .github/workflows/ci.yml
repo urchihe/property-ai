@@ -9,28 +9,38 @@ on:
 jobs:
   laravel-ci:
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:20.10.24
-        options: --privileged
-        ports:
-          - 8000:8000
 
     env:
       COMPOSE_PROJECT_NAME: property-generator
       COMPOSE_PATH_SEPARATOR: ";"
       COMPOSE_FILE: docker/app.yml;docker/database.yml;docker/database_administration.yml;docker/redis.yml
+      APP_ENV: testing
+      APP_KEY: base64:your-app-key-here
+      DB_CONNECTION: mysql
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: property_generator
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      REDIS_HOST: redis
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Install Docker Compose
+      - name: Create .env file
+        run: |
+          cp .env.example .env
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version  # Verify Docker Compose installation
+          docker-compose --version
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
@@ -38,14 +48,18 @@ jobs:
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
-      - name: Run PHP Formatting
-        run: docker-compose exec app composer pint
+      - name: Generate Laravel App Key
+        run: docker-compose exec -T app php artisan key:generate
 
-      - name: Run PHPStan
-        run: docker-compose exec app composer lint
+      - name: Run PHP Formatting
+        run: docker-compose exec -T app composer pint
+
+      - name: Run PHPStan (Static Analysis)
+        run: docker-compose exec -T app composer lint
 
       - name: Run PHPUnit / PEST tests
-        run: docker-compose exec app php artisan test
+        run: docker-compose exec -T app php artisan test --env=testing
 
       - name: Shutdown Docker Compose
-        run: docker-compose down
+        if: always()
+        run: docker-compose down -v

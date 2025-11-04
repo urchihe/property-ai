@@ -2,23 +2,30 @@
 
 namespace App\Livewire;
 
-use App\Http\Requests\PropertyRequest;
 use App\Models\Property;
 use App\Services\PropertyDescriptionService;
-use Illuminate\View\View;
 use Livewire\Component;
 
 class PropertyDescription extends Component
 {
     public ?string $title = null;
+
     public ?string $property_type = null;
+
     public ?string $location = null;
+
     public ?float $price = null;
+
     public ?string $key_features = null;
+
     public string $tone = 'Formal';
+
     public ?string $ai_description = null;
+
     public ?int $seo_score = null;
+
     public bool $loading = false;
+
     public ?Property $property = null;
 
     protected $rules = [
@@ -69,6 +76,7 @@ class PropertyDescription extends Component
         $this->ai_description = '';
         if (! $this->property) {
             $this->loading = false;
+
             return;
         }
 

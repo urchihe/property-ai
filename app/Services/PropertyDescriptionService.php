@@ -9,16 +9,13 @@ use Illuminate\Support\Facades\Http;
 class PropertyDescriptionService
 {
     /**
-     * @param Property $property
-     * @param int $options
-     * @param bool $regenerate
      * @return array<int, array{description: string, seo_score: int}>
      */
     public function generate(Property $property, int $options = 1, bool $regenerate = false): array
     {
-        $cacheKey = 'property_descriptions_' . $property->id;
+        $cacheKey = 'property_descriptions_'.$property->id;
 
-        if (!$regenerate && Cache::has($cacheKey)) {
+        if (! $regenerate && Cache::has($cacheKey)) {
             /** @var array<int, array{description: string, seo_score: int}>|null $cached */
             $cached = Cache::get($cacheKey);
             if (is_array($cached)) {
@@ -56,7 +53,7 @@ class PropertyDescriptionService
                         'Spacious %s in %s with modern amenities. %s',
                         $property->property_type,
                         $property->location,
-                        (string)$e->getMessage()
+                        (string) $e->getMessage()
                     ),
                     'seo_score' => 85,
                 ];
@@ -71,8 +68,7 @@ class PropertyDescriptionService
     /**
      * Safely extract description from OpenAI response
      *
-     * @param array<string, mixed> $response
-     * @return string
+     * @param  array<string, mixed>  $response
      */
     protected function extractDescription(array $response): string
     {
@@ -80,6 +76,7 @@ class PropertyDescriptionService
         if (isset($response['error']) && is_array($response['error'])) {
             /** @var string $errorMessage */
             $errorMessage = $response['error']['message'] ?? 'Unknown API error';
+
             return "Spacious property with modern amenities. {$errorMessage}";
         }
 
@@ -100,22 +97,21 @@ class PropertyDescriptionService
         }
 
         // Fallback description if structure is invalid
-        return "Spacious property with modern amenities.";
+        return 'Spacious property with modern amenities.';
     }
-
 
     /**
      * Call OpenAI Responses API
      *
-     * @param string $promptText
      * @return array<mixed, mixed>
+     *
      * @throws \Exception
      */
     protected function callOpenAIResponses(string $promptText): array
     {
         $apiKey = config('services.openai.key');
 
-        if (!is_string($apiKey) || empty($apiKey)) {
+        if (! is_string($apiKey) || empty($apiKey)) {
             throw new \Exception('OpenAI API key is not set.');
         }
 
@@ -140,9 +136,9 @@ class PropertyDescriptionService
         $json = $response->json();
 
         // ensure $json is array<string, mixed>
-        if (!is_array($json)) {
+        if (! is_array($json)) {
             throw new \Exception(
-                "OpenAI Responses API error ({$response->status()}): " . (string)$response->body()
+                "OpenAI Responses API error ({$response->status()}): ".(string) $response->body()
             );
         }
 
@@ -154,9 +150,13 @@ class PropertyDescriptionService
         $score = 50;
         $length = str_word_count($description);
 
-        if ($length > 120) $score += 15;
-        elseif ($length > 80) $score += 10;
-        elseif ($length > 50) $score += 5;
+        if ($length > 120) {
+            $score += 15;
+        } elseif ($length > 80) {
+            $score += 10;
+        } elseif ($length > 50) {
+            $score += 5;
+        }
 
         $keywords = ['spacious', 'modern', 'luxury', 'affordable', 'family', 'investment', 'convenient'];
         foreach ($keywords as $word) {
