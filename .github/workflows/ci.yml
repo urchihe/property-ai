@@ -41,27 +41,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Create .env for container
-        run: |
-          if [ ! -f .env ]; then
-            if [ -f .env.example ]; then
-              cp .env.example .env
-            else
-              echo "APP_KEY=" > .env
-              echo "APP_ENV=testing" >> .env
-              echo "DB_CONNECTION=mysql" >> .env
-              echo "DB_HOST=mysql" >> .env
-              echo "DB_PORT=3306" >> .env
-              echo "DB_DATABASE=property_generator" >> .env
-              echo "DB_USERNAME=root" >> .env
-              echo "DB_PASSWORD=root" >> .env
-            fi
-          fi
-          cat .env
-
       - name: Start Docker Compose services
         run: docker-compose up -d --build
 
+      # Wait for Laravel container to be ready
       - name: Wait for app service to be ready
         run: |
           echo "Waiting for app container to be ready..."
@@ -78,10 +61,11 @@ jobs:
           docker-compose logs app
           exit 1
 
+      # Prepare Laravel environment and app key
       - name: Prepare Laravel environment
         run: |
-          docker-compose exec -T app rm -rf .env || true
-          docker-compose exec -T app cp .env.example .env || echo "No .env.example found, using mounted .env"
+          docker-compose exec -T app cp .env.example .env || echo "No .env.example found, skipping copy"
+          echo "APP_KEY=${APP_KEY}" | docker-compose exec -T app tee -a .env >/dev/null
           docker-compose exec -T app php artisan key:generate --force
 
       - name: Run PHP Formatting
