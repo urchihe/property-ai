@@ -106,6 +106,12 @@ docker compose exec app php artisan migrate
 ```bash
 docker compose exec app php artisan key:generate
 ```
+### Enter into app container
+```bash
+docker compose exec app bash 
+pnpm install
+pnpm run dev
+```
 Once the containers are up:
 
 App runs on http://localhost:8080
